@@ -1,44 +1,48 @@
+mod plugins;
+
 use bevy::prelude::*;
+use plugins::hello_plugin::*;
 
-struct GreetTimer(Timer);
-pub struct HelloPlugin;
 
-impl Plugin for HelloPlugin{
-    fn build(&self, app: &mut App) {
-        app
-            .insert_resource(GreetTimer(Timer::from_seconds(2.0, true)))
-            .add_startup_system(add_people)//startup system run exactly once before any other system
-            .add_system(greet_people);
-    }
+
+#[derive(Default)]
+struct Square{
+    color: Color,
+    x: usize,
+    y: usize,
 }
 
 
-#[derive(Component)]
-struct Name(String);
 
 
-#[derive(Component)]
-struct Person;
-
-
-
-fn add_people(mut commends: Commands) {
-    commends.spawn().insert(Person).insert(Name("Elaine Proctor".to_string()));
-    commends.spawn().insert(Person).insert(Name("Renzo Hume".to_string()));
-    commends.spawn().insert(Person).insert(Name("Zayna Nieves".to_string()));
+fn setup(mut commands: Commands){
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+    commands.spawn_bundle(SpriteBundle{
+        sprite : Sprite {
+            color: Color::rgb(0.25, 0.25, 0.75),
+            custom_size: Some(Vec2::new(50.0, 50.0)),
+            ..Default::default()
+        },
+        ..Default::default()
+    });
 }
 
-fn greet_people(time: Res<Time>, mut timer:ResMut<GreetTimer>, query : Query<&Name, With<Person>>) { //Run on all entity with person and name component 
-    if timer.0.tick(time.delta()).just_finished() {
-        for name in query.iter() {
-            println!("Hello {} !", name.0);
-        }
-    }
-}
+// fn move_sprite(time: Res<Time>,mut timer: ResMut<GreetTimer>, mut query: Query<&Sprite>){
+//     if timer.0.tick(time.delta()).just_finished() {
+//         for sprite in query.iter(){
+//             sprite.
+//         }
+//     }
+// }
 
 fn main() {
     App::new()
+    .insert_resource(WindowDescriptor {
+        title: "Bevy training !".to_string(),
+        ..Default::default()
+    })
     .add_plugins(DefaultPlugins)
-    .add_plugin(HelloPlugin) 
+    .add_plugin(HelloPlugin)
+    //.add_startup_system(setup)
     .run();
 }
