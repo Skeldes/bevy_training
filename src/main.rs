@@ -1,21 +1,24 @@
 mod plugins;
 
 use bevy::prelude::*;
-use plugins::hello_plugin::*;
+//use plugins::hello_plugin::*;
+
+#[cfg(feature = "debug")]
+use bevy_inspector_egui::WorldInspectorPlugin;
 
 
 
 #[derive(Default)]
-struct Square{
-    color: Color,
-    x: usize,
-    y: usize,
+struct _Square{
+    _color: Color,
+    _x: usize,
+    _y: usize,
 }
 
 
 
 
-fn setup(mut commands: Commands){
+fn _setup(mut commands: Commands){
     commands.spawn_bundle(OrthographicCameraBundle::new_2d());
     commands.spawn_bundle(SpriteBundle{
         sprite : Sprite {
@@ -35,14 +38,24 @@ fn setup(mut commands: Commands){
 //     }
 // }
 
+
+fn camera_setup(mut commands: Commands) {
+    commands.spawn_bundle(OrthographicCameraBundle::new_2d());
+}
+
 fn main() {
-    App::new()
-    .insert_resource(WindowDescriptor {
+    let mut app = App::new();
+    app.insert_resource(WindowDescriptor {
         title: "Bevy training !".to_string(),
+        width: 700.,
+        height: 800.,
         ..Default::default()
     })
-    .add_plugins(DefaultPlugins)
-    .add_plugin(HelloPlugin)
+    .add_plugins(DefaultPlugins);
+    #[cfg(feature = "debug")]
+    app.add_plugin(WorldInspectorPlugin::new());
+    //.add_plugin(HelloPlugin)
     //.add_startup_system(setup)
+    app.add_startup_system(camera_setup)
     .run();
 }
