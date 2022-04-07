@@ -6,7 +6,10 @@ use bevy::{
     prelude::*,
 };
 
-use ressources::tile_map::TileMap;
+use ressources::{
+    board_options::BoardOptions,
+    tile_map::TileMap,
+};
 
 pub struct BoardPlugin;
 
@@ -19,10 +22,32 @@ impl Plugin for BoardPlugin {
 
 
 impl BoardPlugin {
-    pub fn create_board() {
-        let mut tile_map = TileMap::empty(20, 20);
-        tile_map.set_bombs(40);
+    pub fn create_board(
+        mut commands: Commands,
+        board_options: Option<Res<BoardOptions>>,
+        window: Option<Res<WindowDescriptor>>
+    ) {
+        let options = match board_options {
+            None => BoardOptions::default(),
+            Some(o) => o.clone(),        
+        };
+        let mut tile_map = TileMap::empty(options.map_size.0, options.map_size.1);
+        tile_map.set_bombs(options.bomb_count);
         #[cfg(feature = "debug")]
         log::info!("{}", tile_map.console_output());
+    }
+
+    fn adaptative_tile_size(
+        window: Option<Res<WindowDescriptor>>,
+        (min, max): (f32, f32),
+        (width, height): (u16, u16)
+    ) -> f32 {
+        let window = match window {
+            None => WindowDescriptor::default(),
+            Some(o) => o.clone(),
+        };
+        let max_width = window.width / width as f32;
+        let max_height = window.height / height as f32;
+        max_width.min(max_height).clamp(min, max)
     }
 }
