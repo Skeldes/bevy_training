@@ -1,15 +1,16 @@
 pub mod components;
-pub mod ressources;
+mod ressources;
 
 use bevy::{
     log,
     prelude::*,
 };
 
-use ressources::{
-    board_options::BoardOptions,
-    tile_map::TileMap,
-};
+use components::Coordinates;
+
+use crate::tile_map::TileMap;
+
+pub use ressources::*;
 
 pub struct BoardPlugin;
 
@@ -31,8 +32,80 @@ impl BoardPlugin {
             None => BoardOptions::default(),
             Some(o) => o.clone(),        
         };
+
         let mut tile_map = TileMap::empty(options.map_size.0, options.map_size.1);
         tile_map.set_bombs(options.bomb_count);
+
+
+        let tile_size = match options.tile_size {
+            TileSize::Fixed(v) => v,
+            TileSize::Adaptive {min, max} => Self::adaptative_tile_size(
+                window,
+                (min, max),
+                (tile_map.width(), tile_map.height()) 
+            ),
+        };
+
+        let board_size = Vec2::new(
+            tile_map.width() as f32 * tile_size,
+            tile_map.height() as f32 * tile_size
+        );
+
+        log::info!("Board size: {}", board_size);
+
+        // define the board anchor position
+        let board_position = match options.position {
+            BoardPosition::Centered { offset } => {
+                Vec3::new(-(board_size.x / 2.), -(board_size.y / 2.), 0.) + offset
+            },
+            BoardPosition::Custom(p) => p,
+        };
+
+
+        commands
+            .spawn()
+            .insert(Name::new("Board"))
+            .insert(Transform::from_translation(board_position))
+            .insert(GlobalTransform::default())
+            .with_children(|parent| {
+                parent
+                    .spawn_bundle(SpriteBundle {
+                        sprite: Sprite {
+                            color: Color::WHITE,
+                            custom_size: Some(board_size),
+                            ..Default::default()
+                        },
+                        transform: Transform::from_xyz(board_size.x / 2., board_size.y / 2., 0.),
+                        ..Default::default()
+                    })
+                    .insert(Name::new("Background"));
+                    
+                    for (y, line) in tile_map.iter().enumerate() {
+                        for (x, tile) in line.iter().enumerate() {
+                            parent
+                                .spawn_bundle(SpriteBundle {
+                                    sprite: Sprite{
+                                        color: Color::GRAY,
+                                        custom_size: Some(Vec2::splat(
+                                            tile_size - options.tile_padding as f32,
+                                        )),
+                                        ..Default::default()
+                                    },
+                                    transform: Transform::from_xyz(
+                                        (x as f32 * tile_size + (tile_size / 2.)),
+                                        (y as f32 * tile_size + (tile_size / 2.)),
+                                        1.,
+                                    ),
+                                    ..Default::default()
+                                })
+                                .insert(Name::new(format!("Tile ({}, {})", x, y)))
+                                .insert(Coordinates {
+                                    x: x as u16,
+                                    y: y as u16,
+                                });
+                        }
+                    }
+            });
         #[cfg(feature = "debug")]
         log::info!("{}", tile_map.console_output());
     }

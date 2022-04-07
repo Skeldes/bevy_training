@@ -4,7 +4,7 @@ use bevy::prelude::*;
 //use plugins::hello_plugin::*;
 use board_plugin::{
     BoardPlugin,
-    ressources::BoardOptions,
+    BoardOptions,
 };
 
 #[cfg(feature = "debug")]
