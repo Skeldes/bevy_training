@@ -1,28 +1,36 @@
-pub mod components;
+mod bounds;
 mod ressources;
+mod systems;
+pub mod components;
 
 use bevy::{
     log,
+    math::Vec3Swizzles,
     prelude::*,
 };
+use crate::{
+    components::{
+        BombNeighbor,
+        Bomb,
+        Coordinates,
+        Uncover,
+    },
+    ressources::tile::Tile,
+    tile_map::TileMap,
+};
+
+pub use bounds::*;
+pub use ressources::*;
 
 #[cfg(feature = "debug")]
 use bevy_inspector_egui::RegisterInspectable;
-
-use components::*;
-
-use crate::{tile_map::TileMap, components::{BombNeighbor, Bomb}};
-
-pub use ressources::{
-    tile::Tile,
-    *
-};
 
 pub struct BoardPlugin;
 
 impl Plugin for BoardPlugin {
     fn build(&self, app: &mut App) {
-        app.add_startup_system(Self::create_board);//un system est une fonction qui est lancé à chaque boucle de jeu, un system_startup n'est lancé qu'au lancement
+        app.add_startup_system(Self::create_board)//un system est une fonction qui est lancé à chaque boucle de jeu, un system_startup n'est lancé qu'au lancement
+            .add_system(systems::input::input_handling);
         log::info!("Loaded Board Plugin !");
 
 
@@ -35,7 +43,6 @@ impl Plugin for BoardPlugin {
         }
     }
 }
-
 
 impl BoardPlugin {
     pub fn create_board(
@@ -108,6 +115,14 @@ impl BoardPlugin {
                         font,
                     )
             });
+        commands.insert_resource(Board {
+            tile_map,
+            bounds: Bounds2 {
+                position: board_position.xy(),
+                size: board_size,
+            },
+            tile_size,
+        });
         #[cfg(feature = "debug")]
         log::info!("{}", tile_map.console_output());
     }
@@ -125,7 +140,6 @@ impl BoardPlugin {
         let max_height = window.height / height as f32;
         max_width.min(max_height).clamp(min, max)
     }
-
 
     fn bomb_count_text_bundle(count: u8, font: Handle<Font>, size: f32) -> Text2dBundle {
         let (text, color) = (
